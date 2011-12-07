@@ -4,14 +4,34 @@ use common::sense 3.4;
 use Plack::Request;
 use Plack::Response;
 
-use Sub::Exporter 0.982
-  -setup => { exports => [qw(GET_handler PF_handler)]
+use Sub::Call::Tail 0.04;
+use Sub::Exporter   0.982
+  -setup => { exports => [qw(runapp GET_handler PF_handler)]
             , groups  => { handlers => [qw(GET_handler PF_handler)] } };
 
 use XML::Writer   0.612;
 
 # Version set by dist.ini. Do not change here.
 # VERSION
+
+{
+my %handlers = ( GET      => \&GET_handler
+               , PROPFIND =>  \&PF_handler );
+
+
+sub runapp {
+  my $r   = shift;
+
+  if( exists($handlers{$r->{REQUEST_METHOD}}) )  {
+    my $exec = $handlers{$r->{REQUEST_METHOD}};
+    tail $handlers{$r->{REQUEST_METHOD}}->($r); 
+  }
+  else {
+    return [500,[],[]];
+  }
+}
+
+}
 
 sub GET_handler {
   my $r = shift;

@@ -8,7 +8,7 @@ use Data::Dumper;
 
 use File::Spec     3.33;
 
-use HTTP::DAV::Server          qw(:handlers);
+use HTTP::DAV::Server          qw(runapp :handlers);
 use HTTP::DAV::Server::Config  qw(build_config);
 use HTTP::DAV::Server::Logging qw(init_access_logging);
 
@@ -24,25 +24,8 @@ use XML::Tiny      2.06;  # for parsing
 # Version set by dist.ini. Do not change here.
 # VERSION
 
-my %config = build_config( 't/etc' );
+my %config = build_config( 't/etc/davserver.std' );
 my $logfh  = init_access_logging($config{server}{access_log});
-
-my %handlers = ( GET      => \&GET_handler
-               , PROPFIND =>  \&PF_handler );
-
-my $app = sub {
-    my $r   = shift;
-
-    warn(Dumper($r));
-
-    if( exists($handlers{$r->{REQUEST_METHOD}}) )  {
-      my $exec = $handlers{$r->{REQUEST_METHOD}};
-      tail $handlers{$r->{REQUEST_METHOD}}->($r); 
-    }
-    else {
-      return [500,[],[]];
-    }
-};
 
 builder {
   # Deflator not for live use yet.
@@ -56,8 +39,7 @@ builder {
        , format => "%{X-forwarded-for}i %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\"",
        , logger => sub { $logfh->print(@_) };
 
-  $app;
+  \&runapp;
 };
 
-# ABSTRACT - DAV server implemented in Plack.
-# PODNAME - davserver.psgi
+

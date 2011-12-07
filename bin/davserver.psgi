@@ -21,6 +21,9 @@ use Try::Tiny      0.06;
 
 use XML::Tiny      2.06;  # for parsing
 
+# Version set by dist.ini. Do not change here.
+# VERSION
+
 my %config = build_config( 't/etc' );
 my $logfh  = init_access_logging($config{server}{access_log});
 
@@ -55,3 +58,6 @@ builder {
 
   $app;
 };
+
+# ABSTRACT - DAV server implemented in Plack.
+# PODNAME - davserver.psgi

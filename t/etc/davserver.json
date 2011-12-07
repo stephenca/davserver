@@ -1,0 +1,5 @@
+{ 
+  "server": {
+    "access_log":"/dev/null",
+    "docroot": "t/httpdocs" }
+}

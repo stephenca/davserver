@@ -1,0 +1,4 @@
+Revision history for HTTP::DAV::Server
+
+1.000000  Wed Dec 7 15:43:29 2011 +0000
+  - Initial commit (Stephen Cardie)

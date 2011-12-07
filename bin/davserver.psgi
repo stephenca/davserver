@@ -3,11 +3,13 @@
 use common::sense  3.4;
 
 use Carp                qw(carp croak cluck confess);
-use Config::Std    0.007;
+use Config::Any    0.23;
 
 use Data::Dumper;
 
 use File::Spec     3.33;
+
+use Hash::Merge    0.12 qw(merge);
 
 use Log::Log4perl  1.33;
 
@@ -21,20 +23,40 @@ use Try::Tiny      0.06;
 use XML::Tiny      2.06;  # for parsing
 use XML::Writer    0.612; # for responses
 
-my $config_file = $ENV{DAVCONFIG};
+sub do_config {
+  my $config_path = shift || $ENV{DAVCONFIGPATH} || '.';
+  my $config_file = shift || $ENV{DAVCONFIG};
 
-my %config;
-if($config_file) {
-  read_config( $config_file, %config );
+  my $cfg = [];
+  if(defined($config_file)) {
+    my $cfile = File::Spec->catfile( $config_path, $config_file );
+    $cfg = Config::Any->load_files( { files => [$cfile] } );
+  }
+  else {
+    $cfg  = 
+      Config::Any->load_stems( 
+        { stems => [File::Spec->catfile( $config_path, 'davserver' )] } );
+  }
+
+  my @config_vals = map { values %{$_} } @{$cfg};
+  return @config_values 
+       ? %{ merge( @config_vals ) }
+       : ();
 }
 
-# Set up access log for middleware.
-my $access_log = exists( $config{access_log} ) 
-               ?         $config{access_log}
-               : File::Spec->devnull;
-open( my $logfh, ">>", $access_log )
-            or die( "File to open access_log: $!" );
-$logfh->autoflush(1);
+sub init_access_logging {
+  my $access_log = shift;
+
+  # Set up access log for middleware.
+  my $access_log = defined($access_log)
+                 ?         $access_log
+                 : File::Spec->devnull;
+  open( my $logfh, ">>", $access_log )
+              or die( "File to open $access_log: $!" );
+  $logfh->autoflush(1);
+
+  return $logfh;
+}
 
 sub GET_handler {
   my $r = shift;
@@ -48,40 +70,45 @@ sub GET_handler {
 sub PF_handler {
   my $r = shift;
 
-  my $req = Plack::Request->new($r);
+  my $req   = Plack::Request->new($r);
+  my $depth = $req->headers('Depth') || 1;
 
   my $xml;
   my $ns = 'DAV:';
   my $writer = XML::Writer->new( OUTPUT     => \$xml
                                , NAMESPACES => 1
                                , PREFIX_MAP => {$ns => 'D'} );
+
      $writer->xmlDecl('UTF-8');
      $writer->startTag([$ns => 'multistatus']);
+
       $writer->startTag([$ns => 'response']);
        # href
-       $writer->startTag([$ns => 'href']); 
-        $writer->characters('http://localhost:5000/');
-       $writer->endTag([$ns => 'href']);
+       $writer->dataElement( [$ns => 'href']
+                           , 'http://localhost:5000/');
+
+       #propstat
        $writer->startTag([$ns => 'propstat']);
         # status
-        $writer->startTag([$ns => 'status']);
-         $writer->characters('HTTP/1.1 403 Forbidden');
-        $writer->endTag([$ns => 'status']);
-
+        $writer->dataElement( [$ns => 'status']
+                            , 'HTTP/1.1 200 OK');
+ 
         $writer->startTag([$ns => 'prop']);
-         $writer->startTag([$ns => 'resourcetype']);
-          #$writer->emptyTag([$ns => 'collection']);
-          $writer->characters('collection');
-         $writer->endTag([$ns => 'resourcetype']);
+         $writer->dataElement( [$ns => 'resourcetype']
+                             , 'collection');
         $writer->endTag([$ns => 'prop']);
        $writer->endTag([$ns => 'propstat']);
+
       $writer->endTag([$ns => 'response']);
      $writer->endTag([$ns => 'multistatus']);
 
-  print($xml . "\n" );
+     $writer->end;
 
   return[207,['Content-Type','text/xml'],[$xml]];
 }
+
+my %config = do_config( 't/etc' );
+my $logfh  = init_access_logging($config{server}{access_log});
 
 my %handlers = ( GET      => \&GET_handler
                , PROPFIND =>  \&PF_handler );

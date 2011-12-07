@@ -21,12 +21,13 @@ sub build_config {
   my $cfg = [];
   if(defined($config_file)) {
     my $cfile = File::Spec->catfile( $config_path, $config_file );
-    $cfg = Config::Any->load_files( { files => [$cfile] } );
+    $cfg = Config::Any->load_files( { files => [$cfile], use_ext => 1 } );
   }
   else {
     $cfg  = 
       Config::Any->load_stems( 
-        { stems => [File::Spec->catfile( $config_path, 'davserver' )] } );
+        { stems   => [File::Spec->catfile( $config_path, 'davserver' )]
+        , use_ext => 1 } );
   }
 
   my @config_vals = map { values %{$_} } @{$cfg};

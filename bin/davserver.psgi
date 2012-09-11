@@ -44,4 +44,4 @@ builder {
 
 
 # ABSTRACT: abcdef
-# PODNAME: abcde
+# PODNAME: abcdef

@@ -1,1 +1,1 @@
-Sample Perl Plack davserver implementation
+Sample Perl Plack PSGI davserver implementation

@@ -44,4 +44,4 @@ builder {
 
 
 # ABSTRACT: abc
-# PODNAME: ab
+# PODNAME: abc

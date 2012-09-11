@@ -43,5 +43,5 @@ builder {
 };
 
 
-# ABSTRACT: abcdef
+# ABSTRACT: abcdefg
 # PODNAME: abcdefg

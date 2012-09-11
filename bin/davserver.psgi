@@ -43,5 +43,5 @@ builder {
 };
 
 
-# ABSTRACT:
+# ABSTRACT: a
 # PODNAME: a
